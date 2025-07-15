@@ -1,0 +1,280 @@
+.app {
+  min-height: 100vh;
+  background: var(--background);
+  display: flex;
+  flex-direction: column;
+}
+
+.app-container {
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 24px;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.app-header {
+  text-align: center;
+  margin-bottom: 48px;
+  padding: 40px 0;
+  background: var(--surface);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-sm);
+}
+
+.header-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+}
+
+.app-icon {
+  color: var(--primary-color);
+}
+
+.app-title {
+  font-size: 48px;
+  font-weight: 700;
+  background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  margin: 0;
+}
+
+.app-subtitle {
+  font-size: 20px;
+  color: var(--text-secondary);
+  margin: 0;
+}
+
+.app-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.section-title {
+  font-size: 32px;
+  font-weight: 600;
+  color: var(--text-primary);
+  text-align: center;
+  margin: 0 0 40px 0;
+}
+
+.input-selection,
+.game-selection {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.input-options,
+.game-options {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 24px;
+  width: 100%;
+  max-width: 900px;
+}
+
+.option-card {
+  background: var(--surface);
+  border-radius: var(--radius-lg);
+  padding: 48px 32px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  border: 2px solid transparent;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  color: var(--text-primary);
+  box-shadow: var(--shadow-sm);
+}
+
+.option-card:hover {
+  border-color: var(--primary-color);
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-lg);
+}
+
+.option-card svg {
+  color: var(--primary-color);
+}
+
+.option-card h3 {
+  font-size: 24px;
+  font-weight: 600;
+  margin: 0;
+}
+
+.option-card p {
+  font-size: 16px;
+  color: var(--text-secondary);
+  margin: 0;
+}
+
+.back-button {
+  align-self: flex-start;
+  padding: 12px 24px;
+  background: transparent;
+  color: var(--primary-color);
+  font-size: 16px;
+  font-weight: 500;
+  border-radius: var(--radius-md);
+  margin-bottom: 24px;
+}
+
+.back-button:hover {
+  background: var(--gray-100);
+}
+
+.words-summary {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 20px 32px;
+  background: var(--surface);
+  border-radius: var(--radius-md);
+  margin-bottom: 40px;
+  font-size: 18px;
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.words-summary svg {
+  color: var(--warning-color);
+}
+
+.reset-link {
+  margin-left: auto;
+  padding: 8px 16px;
+  background: transparent;
+  color: var(--primary-color);
+  font-size: 14px;
+  text-decoration: underline;
+}
+
+.reset-link:hover {
+  color: var(--secondary-color);
+}
+
+.game-card {
+  background: var(--surface);
+  border-radius: var(--radius-lg);
+  padding: 48px 32px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  border: 2px solid transparent;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  color: var(--text-primary);
+  box-shadow: var(--shadow-sm);
+  position: relative;
+  overflow: hidden;
+}
+
+.game-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.game-card:hover::before {
+  opacity: 0.05;
+}
+
+.game-card:hover {
+  border-color: var(--primary-color);
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-lg);
+}
+
+.game-card svg {
+  color: var(--primary-color);
+  position: relative;
+  z-index: 1;
+}
+
+.game-card h3 {
+  font-size: 28px;
+  font-weight: 600;
+  margin: 0;
+  position: relative;
+  z-index: 1;
+}
+
+.game-card p {
+  font-size: 16px;
+  color: var(--text-secondary);
+  margin: 0 0 16px 0;
+  position: relative;
+  z-index: 1;
+}
+
+.game-features {
+  display: flex;
+  gap: 12px;
+  position: relative;
+  z-index: 1;
+}
+
+.game-features span {
+  padding: 6px 16px;
+  background: var(--background);
+  border-radius: var(--radius-sm);
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--primary-color);
+}
+
+@media (max-width: 768px) {
+  .app-container {
+    padding: 16px;
+  }
+  
+  .app-title {
+    font-size: 36px;
+  }
+  
+  .app-subtitle {
+    font-size: 18px;
+  }
+  
+  .section-title {
+    font-size: 24px;
+    margin-bottom: 32px;
+  }
+  
+  .input-options,
+  .game-options {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+  
+  .option-card,
+  .game-card {
+    padding: 32px 24px;
+  }
+  
+  .words-summary {
+    flex-wrap: wrap;
+    padding: 16px;
+    font-size: 16px;
+  }
+}
