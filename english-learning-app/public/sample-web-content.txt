@@ -1,0 +1,49 @@
+# 北京版小学英语三年级下册 - 示例内容
+
+## Unit 1 - Spring is here
+
+spring - 春天 [sprɪŋ]
+warm - 温暖的 [wɔːrm]
+flower - 花 [ˈflaʊər]
+tree - 树 [triː]
+green - 绿色的 [ɡriːn]
+
+## Unit 2 - My family
+
+grandmother - 祖母 [ˈɡrænmʌðər]
+grandfather - 祖父 [ˈɡrænfɑːðər]
+aunt - 阿姨 [ænt]
+uncle - 叔叔 [ˈʌŋkl]
+cousin - 表兄弟姐妹 [ˈkʌzn]
+
+## Unit 3 - Food and drinks
+
+breakfast - 早餐 [ˈbrekfəst]
+lunch - 午餐 [lʌntʃ]
+dinner - 晚餐 [ˈdɪnər]
+hungry - 饿的 [ˈhʌŋɡri]
+thirsty - 渴的 [ˈθɜːrsti]
+
+## Unit 4 - My day
+
+morning - 早晨 [ˈmɔːrnɪŋ]
+afternoon - 下午 [ˌæftərˈnuːn]
+evening - 晚上 [ˈiːvnɪŋ]
+night - 夜晚 [naɪt]
+sleep - 睡觉 [sliːp]
+
+## Unit 5 - Sports and games
+
+football - 足球 [ˈfʊtbɔːl]
+basketball - 篮球 [ˈbæskɪtbɔːl]
+swimming - 游泳 [ˈswɪmɪŋ]
+running - 跑步 [ˈrʌnɪŋ]
+playing - 玩耍 [ˈpleɪɪŋ]
+
+## Unit 6 - Weather
+
+sunny - 晴朗的 [ˈsʌni]
+cloudy - 多云的 [ˈklaʊdi]
+rainy - 下雨的 [ˈreɪni]
+windy - 有风的 [ˈwɪndi]
+snowy - 下雪的 [ˈsnoʊi] 

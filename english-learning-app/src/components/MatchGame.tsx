@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { CheckCircle, RefreshCw, Trophy } from 'lucide-react';
+import { RefreshCw, Trophy } from 'lucide-react';
 import { Word } from '../types';
 import './MatchGame.css';
 
@@ -117,7 +117,7 @@ export const MatchGame: React.FC<MatchGameProps> = ({ words, onComplete }) => {
     const minutes = Math.floor(seconds / 60);
     const remainingSeconds = seconds % 60;
     return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
-  }, [startTime, gameComplete]);
+  }, [startTime]);
 
   const resetGame = () => {
     setCards([]);

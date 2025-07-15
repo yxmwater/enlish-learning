@@ -1,12 +1,16 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { BookOpen, Upload, PenTool, Shuffle, Gamepad2, Sparkles } from 'lucide-react';
+import { BookOpen, Upload, PenTool, Shuffle, Gamepad2, Sparkles, GraduationCap, Globe, FileText } from 'lucide-react';
 import { FileUpload } from './components/FileUpload';
 import { ManualInput } from './components/ManualInput';
 import { RandomWords } from './components/RandomWords';
+import { TextbookSelection } from './components/TextbookSelection';
+import { WebContentImport } from './components/WebContentImport';
+import { PDFImport } from './components/PDFImport';
 import { MatchGame } from './components/MatchGame';
 import { SpellGame } from './components/SpellGame';
-import { Word, InputMode, GameMode } from './types';
+import { Word, InputMode, GameMode, TextbookData } from './types';
+import { addPDFTextbook } from './data/textbookDatabase';
 import './App.css';
 
 function App() {
@@ -18,6 +22,13 @@ function App() {
   const handleWordsLoaded = (loadedWords: Word[]) => {
     setWords(loadedWords);
     setInputMode(null);
+  };
+
+  const handleTextbookParsed = (textbook: TextbookData) => {
+    // 添加到教材数据库
+    addPDFTextbook(textbook);
+    // 切换到教材选择模式
+    setInputMode('textbook');
   };
 
   const startGame = (mode: GameMode) => {
@@ -111,6 +122,39 @@ function App() {
                     <h3>随机生成</h3>
                     <p>根据级别生成单词</p>
                   </motion.button>
+
+                  <motion.button
+                    className="option-card"
+                    onClick={() => setInputMode('textbook')}
+                    whileHover={{ scale: 1.03 }}
+                    whileTap={{ scale: 0.97 }}
+                  >
+                    <GraduationCap size={32} />
+                    <h3>教材词汇</h3>
+                    <p>选择教材版本学习</p>
+                  </motion.button>
+
+                  <motion.button
+                    className="option-card"
+                    onClick={() => setInputMode('web')}
+                    whileHover={{ scale: 1.03 }}
+                    whileTap={{ scale: 0.97 }}
+                  >
+                    <Globe size={32} />
+                    <h3>网络导入</h3>
+                    <p>从网页提取词汇</p>
+                  </motion.button>
+
+                  <motion.button
+                    className="option-card"
+                    onClick={() => setInputMode('pdf')}
+                    whileHover={{ scale: 1.03 }}
+                    whileTap={{ scale: 0.97 }}
+                  >
+                    <FileText size={32} />
+                    <h3>PDF导入</h3>
+                    <p>从PDF教材提取章节</p>
+                  </motion.button>
                 </div>
               </motion.div>
             )}
@@ -154,6 +198,48 @@ function App() {
                   ← 返回
                 </button>
                 <RandomWords onWordsGenerated={handleWordsLoaded} />
+              </motion.div>
+            )}
+
+            {inputMode === 'textbook' && (
+              <motion.div
+                key="textbook-selection"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+              >
+                <button className="back-button" onClick={() => setInputMode(null)}>
+                  ← 返回
+                </button>
+                <TextbookSelection onWordsSelected={handleWordsLoaded} />
+              </motion.div>
+            )}
+
+            {inputMode === 'web' && (
+              <motion.div
+                key="web-content-import"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+              >
+                <button className="back-button" onClick={() => setInputMode(null)}>
+                  ← 返回
+                </button>
+                <WebContentImport onWordsImported={handleWordsLoaded} />
+              </motion.div>
+            )}
+
+            {inputMode === 'pdf' && (
+              <motion.div
+                key="pdf-import"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+              >
+                <button className="back-button" onClick={() => setInputMode(null)}>
+                  ← 返回
+                </button>
+                <PDFImport onTextbookParsed={handleTextbookParsed} />
               </motion.div>
             )}
 

@@ -1,0 +1,394 @@
+.textbook-selection {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+.textbook-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 24px;
+  padding: 20px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 16px;
+  color: white;
+}
+
+.textbook-icon {
+  opacity: 0.9;
+}
+
+.textbook-title h2 {
+  margin: 0 0 4px 0;
+  font-size: 24px;
+  font-weight: 600;
+}
+
+.textbook-title p {
+  margin: 0;
+  opacity: 0.9;
+  font-size: 14px;
+}
+
+/* 面包屑导航 */
+.breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 20px;
+  padding: 12px 16px;
+  background: #f8f9fa;
+  border-radius: 8px;
+  font-size: 14px;
+}
+
+.breadcrumb-back {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+  background: none;
+  border: none;
+  color: #666;
+  cursor: pointer;
+  border-radius: 4px;
+  transition: background-color 0.2s;
+}
+
+.breadcrumb-back:hover {
+  background: #e9ecef;
+}
+
+.breadcrumb-path {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #666;
+}
+
+.breadcrumb-item {
+  color: #333;
+  font-weight: 500;
+}
+
+/* 教材列表 */
+.textbook-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.textbook-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px;
+  background: white;
+  border: 1px solid #e9ecef;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.2s;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.textbook-card:hover {
+  border-color: #667eea;
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.15);
+}
+
+.textbook-info {
+  flex: 1;
+}
+
+.textbook-info h3 {
+  margin: 0 0 8px 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: #333;
+}
+
+.textbook-meta {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.textbook-meta span {
+  padding: 2px 8px;
+  background: #e9ecef;
+  border-radius: 4px;
+  font-size: 12px;
+  color: #666;
+}
+
+.textbook-description {
+  margin: 8px 0;
+  color: #666;
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+.textbook-stats {
+  display: flex;
+  gap: 16px;
+  font-size: 13px;
+  color: #888;
+}
+
+.textbook-arrow {
+  color: #ccc;
+  transition: color 0.2s;
+}
+
+.textbook-card:hover .textbook-arrow {
+  color: #667eea;
+}
+
+/* 单元选择 */
+.unit-selection {
+  animation: fadeIn 0.3s ease-in-out;
+}
+
+.selection-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+  padding: 16px 20px;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.selection-header h3 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: #333;
+}
+
+.start-all-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  background: #667eea;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  transition: background-color 0.2s;
+}
+
+.start-all-btn:hover {
+  background: #5a67d8;
+}
+
+.unit-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.unit-item {
+  background: white;
+  border: 1px solid #e9ecef;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.unit-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.unit-header:hover {
+  background: #f8f9fa;
+}
+
+.unit-info {
+  flex: 1;
+}
+
+.unit-info h4 {
+  margin: 0 0 4px 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: #333;
+}
+
+.unit-info p {
+  margin: 0 0 8px 0;
+  color: #666;
+  font-size: 14px;
+}
+
+.unit-stats {
+  font-size: 13px;
+  color: #888;
+}
+
+.unit-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.unit-start-btn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 12px;
+  background: #28a745;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 500;
+  transition: background-color 0.2s;
+}
+
+.unit-start-btn:hover {
+  background: #218838;
+}
+
+.unit-expand-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  background: none;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  color: #666;
+  transition: all 0.2s;
+}
+
+.unit-expand-btn:hover {
+  background: #e9ecef;
+  color: #333;
+}
+
+/* 课程列表 */
+.lesson-list {
+  border-top: 1px solid #e9ecef;
+  background: #f8f9fa;
+}
+
+.lesson-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  border-bottom: 1px solid #e9ecef;
+}
+
+.lesson-item:last-child {
+  border-bottom: none;
+}
+
+.lesson-item:hover {
+  background: #e9ecef;
+}
+
+.lesson-info {
+  flex: 1;
+}
+
+.lesson-info h5 {
+  margin: 0 0 4px 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: #333;
+}
+
+.lesson-info p {
+  margin: 0 0 4px 0;
+  color: #666;
+  font-size: 13px;
+}
+
+.lesson-stats {
+  font-size: 12px;
+  color: #888;
+}
+
+.lesson-play {
+  color: #28a745;
+  opacity: 0.7;
+  transition: opacity 0.2s;
+}
+
+.lesson-item:hover .lesson-play {
+  opacity: 1;
+}
+
+/* 动画 */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+  .textbook-selection {
+    padding: 16px;
+  }
+  
+  .textbook-header {
+    padding: 16px;
+  }
+  
+  .textbook-header h2 {
+    font-size: 20px;
+  }
+  
+  .textbook-card {
+    padding: 16px;
+  }
+  
+  .textbook-meta {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  
+  .textbook-stats {
+    flex-direction: column;
+    gap: 4px;
+  }
+  
+  .selection-header {
+    flex-direction: column;
+    gap: 12px;
+    align-items: flex-start;
+  }
+  
+  .unit-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+  
+  .unit-actions {
+    align-self: flex-end;
+  }
+} 
