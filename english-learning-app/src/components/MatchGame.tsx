@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { RefreshCw, Trophy } from 'lucide-react';
+import { RefreshCw, Trophy, Eye, Brain } from 'lucide-react';
 import { Word } from '../types';
+import { playMatchSound, playFlipSound, playSuccessSound } from '../utils/soundEffects';
 import './MatchGame.css';
 
 interface MatchGameProps {
@@ -13,6 +14,7 @@ interface GameCard {
   id: string;
   wordId: string;
   content: string;
+  translation?: string;  // 添加翻译字段
   type: 'english' | 'chinese';
   isFlipped: boolean;
   isMatched: boolean;
@@ -25,38 +27,60 @@ export const MatchGame: React.FC<MatchGameProps> = ({ words, onComplete }) => {
   const [moves, setMoves] = useState(0);
   const [startTime] = useState(Date.now());
   const [gameComplete, setGameComplete] = useState(false);
+  const [isVisualMode, setIsVisualMode] = useState(true);  // 默认为视觉学习模式
 
   // Initialize game cards
   useEffect(() => {
+    initializeGame();
+  }, [words, isVisualMode]);
+
+  const initializeGame = () => {
     const gameCards: GameCard[] = [];
     const wordsToUse = words.slice(0, 8); // Use first 8 words for a 4x4 grid
 
-    wordsToUse.forEach((word) => {
-      // English card
-      gameCards.push({
-        id: `en-${word.id}`,
-        wordId: word.id,
-        content: word.english,
-        type: 'english',
-        isFlipped: false,
-        isMatched: false
+    if (isVisualMode) {
+      // 视觉学习模式：每个卡片显示英文和中文
+      wordsToUse.forEach((word, index) => {
+        // 创建两个相同的卡片用于配对
+        for (let i = 0; i < 2; i++) {
+          gameCards.push({
+            id: `${i}-${word.id}`,
+            wordId: word.id,
+            content: word.english,
+            translation: word.chinese,
+            type: 'english',
+            isFlipped: false,
+            isMatched: false
+          });
+        }
       });
+    } else {
+      // 记忆训练模式：英文和中文分开
+      wordsToUse.forEach((word) => {
+        gameCards.push({
+          id: `en-${word.id}`,
+          wordId: word.id,
+          content: word.english,
+          type: 'english',
+          isFlipped: false,
+          isMatched: false
+        });
 
-      // Chinese card (or English again if no Chinese)
-      gameCards.push({
-        id: `ch-${word.id}`,
-        wordId: word.id,
-        content: word.chinese || word.english,
-        type: word.chinese ? 'chinese' : 'english',
-        isFlipped: false,
-        isMatched: false
+        gameCards.push({
+          id: `ch-${word.id}`,
+          wordId: word.id,
+          content: word.chinese || word.english,
+          type: 'chinese',
+          isFlipped: false,
+          isMatched: false
+        });
       });
-    });
+    }
 
     // Shuffle cards
     const shuffled = gameCards.sort(() => Math.random() - 0.5);
     setCards(shuffled);
-  }, [words]);
+  };
 
   // Handle card click
   const handleCardClick = (cardId: string) => {
@@ -64,6 +88,8 @@ export const MatchGame: React.FC<MatchGameProps> = ({ words, onComplete }) => {
     if (!card || card.isMatched || card.isFlipped) return;
 
     if (selectedCards.length === 2) return;
+
+    playFlipSound();  // 播放翻牌音效
 
     const newSelectedCards = [...selectedCards, cardId];
     setSelectedCards(newSelectedCards);
@@ -86,8 +112,10 @@ export const MatchGame: React.FC<MatchGameProps> = ({ words, onComplete }) => {
     const firstCard = cards.find(c => c.id === firstId);
     const secondCard = cards.find(c => c.id === secondId);
 
-    if (firstCard && secondCard && firstCard.wordId === secondCard.wordId && firstCard.id !== secondCard.id) {
+    if (firstCard && secondCard && firstCard.wordId === secondCard.wordId && firstId !== secondId) {
       // Match found!
+      playMatchSound();  // 播放匹配成功音效
+      
       setTimeout(() => {
         setCards(cards.map(c => 
           c.wordId === firstCard.wordId ? { ...c, isMatched: true } : c
@@ -98,6 +126,7 @@ export const MatchGame: React.FC<MatchGameProps> = ({ words, onComplete }) => {
         // Check if game is complete
         if (matchedPairs.length + 1 === words.slice(0, 8).length) {
           setGameComplete(true);
+          playSuccessSound();  // 播放游戏完成音效
         }
       }, 500);
     } else {
@@ -125,33 +154,12 @@ export const MatchGame: React.FC<MatchGameProps> = ({ words, onComplete }) => {
     setMatchedPairs([]);
     setMoves(0);
     setGameComplete(false);
-    
-    // Reinitialize the game
-    const gameCards: GameCard[] = [];
-    const wordsToUse = words.slice(0, 8);
+    initializeGame();
+  };
 
-    wordsToUse.forEach((word) => {
-      gameCards.push({
-        id: `en-${word.id}`,
-        wordId: word.id,
-        content: word.english,
-        type: 'english',
-        isFlipped: false,
-        isMatched: false
-      });
-
-      gameCards.push({
-        id: `ch-${word.id}`,
-        wordId: word.id,
-        content: word.chinese || word.english,
-        type: word.chinese ? 'chinese' : 'english',
-        isFlipped: false,
-        isMatched: false
-      });
-    });
-
-    const shuffled = gameCards.sort(() => Math.random() - 0.5);
-    setCards(shuffled);
+  const toggleMode = () => {
+    setIsVisualMode(!isVisualMode);
+    resetGame();
   };
 
   return (
@@ -171,10 +179,16 @@ export const MatchGame: React.FC<MatchGameProps> = ({ words, onComplete }) => {
             <span className="stat-value">{timeElapsed}</span>
           </div>
         </div>
-        <button className="reset-button" onClick={resetGame}>
-          <RefreshCw size={20} />
-          重新开始
-        </button>
+        <div className="game-controls">
+          <button className={`mode-button ${isVisualMode ? 'active' : ''}`} onClick={toggleMode}>
+            {isVisualMode ? <Eye size={20} /> : <Brain size={20} />}
+            {isVisualMode ? '视觉学习' : '记忆训练'}
+          </button>
+          <button className="reset-button" onClick={resetGame}>
+            <RefreshCw size={20} />
+            重新开始
+          </button>
+        </div>
       </div>
 
       <div className="game-board">
@@ -193,9 +207,16 @@ export const MatchGame: React.FC<MatchGameProps> = ({ words, onComplete }) => {
                 <div className="card-pattern"></div>
               </div>
               <div className="card-back">
-                <span className={`card-content ${card.type}`}>
-                  {card.content}
-                </span>
+                {isVisualMode ? (
+                  <div className="visual-mode-content">
+                    <span className="card-content english">{card.content}</span>
+                    <span className="card-content chinese">{card.translation}</span>
+                  </div>
+                ) : (
+                  <span className={`card-content ${card.type}`}>
+                    {card.content}
+                  </span>
+                )}
               </div>
             </div>
           </motion.div>
