@@ -1,283 +1,204 @@
 import mysql from 'mysql2/promise';
 
-// 数据库配置
-const DB_CONFIG = {
+// 数据库连接配置
+const dbConfig = {
   host: '43.143.135.107',
   port: 3306,
   user: 'test',
-  password: 'amytest',
-  database: 'english_learning', // 假设数据库名为 english_learning
-  connectTimeout: 10000,
-  acquireTimeout: 10000,
-  timeout: 10000,
+  password: 'testTEST_123',
+  database: 'test'
 };
 
-// 历史记录接口
-export interface WordImportHistory {
+// 学习记录评分标准
+export const ScoreStandard = {
+  EXCELLENT: { min: 90, label: '优秀', description: '记忆力超群，继续保持！' },
+  GOOD: { min: 75, label: '良好', description: '掌握得不错，有待提高。' },
+  FAIR: { min: 60, label: '一般', description: '需要多加练习。' },
+  POOR: { min: 0, label: '待加强', description: '建议重新复习。' }
+};
+
+export interface LearningRecord {
   id?: number;
-  title: string;
-  content: string;
-  source_type: 'file' | 'manual' | 'random' | 'textbook' | 'web' | 'pdf' | 'ocr';
-  word_count: number;
-  created_at?: Date;
-  textbook_info?: string; // JSON字符串，存储教材信息
-  metadata?: string; // JSON字符串，存储额外信息
+  userId: string;
+  gameType: 'match' | 'spell';
+  wordCount: number;
+  correctCount: number;
+  timeSpent: number;
+  score: number;
+  evaluation: string;
+  timestamp: Date;
 }
 
-// 数据库连接管理
+export interface WordbookEntry {
+  id?: number;
+  userId: string;
+  word: string;
+  translation: string;
+  difficulty: 'easy' | 'medium' | 'hard';
+  addedAt: Date;
+  lastReviewedAt: Date | null;
+  reviewCount: number;
+  mastered: boolean;
+}
+
 export class DatabaseManager {
-  private static connection: mysql.Connection | null = null;
+  private static pool: mysql.Pool;
 
-  // 测试数据库连接
-  static async testConnection(): Promise<{ success: boolean; error?: string }> {
+  static async initialize() {
     try {
-      const connection = await mysql.createConnection(DB_CONFIG);
+      this.pool = mysql.createPool(dbConfig);
       
-      // 测试查询
-      const [rows] = await connection.execute('SELECT 1 as test');
-      
-      await connection.end();
-      
-      return { success: true };
+      // 创建学习记录表
+      await this.pool.execute(`
+        CREATE TABLE IF NOT EXISTS learning_records (
+          id INT AUTO_INCREMENT PRIMARY KEY,
+          userId VARCHAR(50) NOT NULL,
+          gameType ENUM('match', 'spell') NOT NULL,
+          wordCount INT NOT NULL,
+          correctCount INT NOT NULL,
+          timeSpent INT NOT NULL,
+          score FLOAT NOT NULL,
+          evaluation TEXT NOT NULL,
+          timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
+        )
+      `);
+
+      // 创建单词本表
+      await this.pool.execute(`
+        CREATE TABLE IF NOT EXISTS wordbook (
+          id INT AUTO_INCREMENT PRIMARY KEY,
+          userId VARCHAR(50) NOT NULL,
+          word VARCHAR(100) NOT NULL,
+          translation VARCHAR(200) NOT NULL,
+          difficulty ENUM('easy', 'medium', 'hard') NOT NULL,
+          addedAt DATETIME DEFAULT CURRENT_TIMESTAMP,
+          lastReviewedAt DATETIME NULL,
+          reviewCount INT DEFAULT 0,
+          mastered BOOLEAN DEFAULT FALSE,
+          UNIQUE KEY unique_word_per_user (userId, word)
+        )
+      `);
+
+      console.log('数据库初始化成功');
     } catch (error) {
-      return { 
-        success: false, 
-        error: `数据库连接失败: ${error}` 
-      };
+      console.error('数据库初始化失败:', error);
+      throw error;
     }
   }
 
-  // 获取数据库连接
-  static async getConnection(): Promise<mysql.Connection> {
-    if (!this.connection) {
-      this.connection = await mysql.createConnection(DB_CONFIG);
-    }
-    return this.connection;
+  // 计算学习评分
+  static calculateScore(correctCount: number, wordCount: number, timeSpent: number): number {
+    const accuracyScore = (correctCount / wordCount) * 70; // 准确率占70分
+    const timePerWord = timeSpent / wordCount;
+    const timeScore = Math.max(0, 30 - (timePerWord - 10) * 2); // 时间得分占30分，每词基准时间10秒
+    return Math.round(accuracyScore + timeScore);
   }
 
-  // 关闭数据库连接
-  static async closeConnection(): Promise<void> {
-    if (this.connection) {
-      await this.connection.end();
-      this.connection = null;
-    }
+  // 获取评价
+  static getEvaluation(score: number): string {
+    if (score >= ScoreStandard.EXCELLENT.min) return ScoreStandard.EXCELLENT.description;
+    if (score >= ScoreStandard.GOOD.min) return ScoreStandard.GOOD.description;
+    if (score >= ScoreStandard.FAIR.min) return ScoreStandard.FAIR.description;
+    return ScoreStandard.POOR.description;
   }
 
-  // 创建历史记录表
-  static async createHistoryTable(): Promise<void> {
-    const connection = await this.getConnection();
-    
-    const createTableSQL = `
-      CREATE TABLE IF NOT EXISTS word_import_history (
-        id INT AUTO_INCREMENT PRIMARY KEY,
-        title VARCHAR(255) NOT NULL,
-        content TEXT NOT NULL,
-        source_type ENUM('file', 'manual', 'random', 'textbook', 'web', 'pdf', 'ocr') NOT NULL,
-        word_count INT NOT NULL DEFAULT 0,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        textbook_info JSON,
-        metadata JSON,
-        INDEX idx_source_type (source_type),
-        INDEX idx_created_at (created_at)
-      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-    `;
-    
-    await connection.execute(createTableSQL);
-  }
-
-  // 保存历史记录
-  static async saveHistory(history: WordImportHistory): Promise<number> {
-    const connection = await this.getConnection();
-    
-    const insertSQL = `
-      INSERT INTO word_import_history 
-      (title, content, source_type, word_count, textbook_info, metadata)
-      VALUES (?, ?, ?, ?, ?, ?)
-    `;
-    
-    const [result] = await connection.execute(insertSQL, [
-      history.title,
-      history.content,
-      history.source_type,
-      history.word_count,
-      history.textbook_info || null,
-      history.metadata || null
-    ]);
-    
-    return (result as mysql.ResultSetHeader).insertId;
-  }
-
-  // 获取历史记录列表
-  static async getHistoryList(limit: number = 50, offset: number = 0): Promise<WordImportHistory[]> {
-    const connection = await this.getConnection();
-    
-    const selectSQL = `
-      SELECT id, title, content, source_type, word_count, created_at, textbook_info, metadata
-      FROM word_import_history 
-      ORDER BY created_at DESC 
-      LIMIT ? OFFSET ?
-    `;
-    
-    const [rows] = await connection.execute(selectSQL, [limit, offset]);
-    
-    return rows as WordImportHistory[];
-  }
-
-  // 根据ID获取历史记录
-  static async getHistoryById(id: number): Promise<WordImportHistory | null> {
-    const connection = await this.getConnection();
-    
-    const selectSQL = `
-      SELECT id, title, content, source_type, word_count, created_at, textbook_info, metadata
-      FROM word_import_history 
-      WHERE id = ?
-    `;
-    
-    const [rows] = await connection.execute(selectSQL, [id]);
-    const results = rows as WordImportHistory[];
-    
-    return results.length > 0 ? results[0] : null;
-  }
-
-  // 删除历史记录
-  static async deleteHistory(id: number): Promise<boolean> {
-    const connection = await this.getConnection();
-    
-    const deleteSQL = `DELETE FROM word_import_history WHERE id = ?`;
-    const [result] = await connection.execute(deleteSQL, [id]);
-    
-    return (result as mysql.ResultSetHeader).affectedRows > 0;
-  }
-
-  // 搜索历史记录
-  static async searchHistory(keyword: string, limit: number = 20): Promise<WordImportHistory[]> {
-    const connection = await this.getConnection();
-    
-    const searchSQL = `
-      SELECT id, title, content, source_type, word_count, created_at, textbook_info, metadata
-      FROM word_import_history 
-      WHERE title LIKE ? OR content LIKE ?
-      ORDER BY created_at DESC 
-      LIMIT ?
-    `;
-    
-    const searchTerm = `%${keyword}%`;
-    const [rows] = await connection.execute(searchSQL, [searchTerm, searchTerm, limit]);
-    
-    return rows as WordImportHistory[];
-  }
-
-  // 按来源类型获取历史记录
-  static async getHistoryBySource(sourceType: string, limit: number = 20): Promise<WordImportHistory[]> {
-    const connection = await this.getConnection();
-    
-    const selectSQL = `
-      SELECT id, title, content, source_type, word_count, created_at, textbook_info, metadata
-      FROM word_import_history 
-      WHERE source_type = ?
-      ORDER BY created_at DESC 
-      LIMIT ?
-    `;
-    
-    const [rows] = await connection.execute(selectSQL, [sourceType, limit]);
-    
-    return rows as WordImportHistory[];
-  }
-
-  // 获取统计信息
-  static async getStatistics(): Promise<{
-    totalRecords: number;
-    totalWords: number;
-    sourceStats: { source_type: string; count: number }[];
-  }> {
-    const connection = await this.getConnection();
-    
-    // 总记录数和总单词数
-    const [totalRows] = await connection.execute(`
-      SELECT COUNT(*) as total_records, SUM(word_count) as total_words
-      FROM word_import_history
-    `);
-    
-    const totals = (totalRows as any[])[0];
-    
-    // 按来源类型统计
-    const [sourceRows] = await connection.execute(`
-      SELECT source_type, COUNT(*) as count
-      FROM word_import_history
-      GROUP BY source_type
-      ORDER BY count DESC
-    `);
-    
-    return {
-      totalRecords: totals.total_records || 0,
-      totalWords: totals.total_words || 0,
-      sourceStats: sourceRows as { source_type: string; count: number }[]
-    };
-  }
-}
-
-// 历史记录工具函数
-export class HistoryUtils {
-  // 从单词列表生成标题
-  static generateTitle(words: any[], sourceType: string): string {
-    const count = words.length;
-    const firstWords = words.slice(0, 3).map(w => w.word || w.english || '').join(', ');
-    
-    const sourceNames = {
-      file: '文件导入',
-      manual: '手动输入',
-      random: '随机生成',
-      textbook: '教材词汇',
-      web: '网络导入',
-      pdf: 'PDF导入',
-      ocr: 'OCR识别'
-    };
-    
-    const sourceName = sourceNames[sourceType as keyof typeof sourceNames] || '未知来源';
-    
-    if (count <= 3) {
-      return `${sourceName} - ${firstWords}`;
-    } else {
-      return `${sourceName} - ${firstWords}等${count}个单词`;
-    }
-  }
-
-  // 格式化历史记录显示
-  static formatHistoryForDisplay(history: WordImportHistory): {
-    title: string;
-    subtitle: string;
-    wordCount: number;
-    sourceType: string;
-    createdAt: string;
-  } {
-    const sourceNames = {
-      file: '文件导入',
-      manual: '手动输入',
-      random: '随机生成',
-      textbook: '教材词汇',
-      web: '网络导入',
-      pdf: 'PDF导入',
-      ocr: 'OCR识别'
-    };
-    
-    const sourceName = sourceNames[history.source_type as keyof typeof sourceNames] || '未知来源';
-    
-    return {
-      title: history.title,
-      subtitle: sourceName,
-      wordCount: history.word_count,
-      sourceType: history.source_type,
-      createdAt: history.created_at ? new Date(history.created_at).toLocaleString('zh-CN') : '未知时间'
-    };
-  }
-
-  // 解析存储的内容为单词列表
-  static parseStoredContent(content: string): any[] {
+  // 保存学习记录
+  static async saveLearningRecord(record: LearningRecord): Promise<number> {
     try {
-      return JSON.parse(content);
+      const [result] = await this.pool.execute(
+        `INSERT INTO learning_records 
+        (userId, gameType, wordCount, correctCount, timeSpent, score, evaluation) 
+        VALUES (?, ?, ?, ?, ?, ?, ?)`,
+        [
+          record.userId,
+          record.gameType,
+          record.wordCount,
+          record.correctCount,
+          record.timeSpent,
+          record.score,
+          record.evaluation
+        ]
+      );
+      return (result as any).insertId;
     } catch (error) {
-      console.error('解析历史记录内容失败:', error);
-      return [];
+      console.error('保存学习记录失败:', error);
+      throw error;
+    }
+  }
+
+  // 获取学习记录
+  static async getLearningRecords(userId: string): Promise<LearningRecord[]> {
+    try {
+      const [rows] = await this.pool.execute(
+        'SELECT * FROM learning_records WHERE userId = ? ORDER BY timestamp DESC',
+        [userId]
+      );
+      return rows as LearningRecord[];
+    } catch (error) {
+      console.error('获取学习记录失败:', error);
+      throw error;
+    }
+  }
+
+  // 添加单词到单词本
+  static async addToWordbook(entry: WordbookEntry): Promise<void> {
+    try {
+      await this.pool.execute(
+        `INSERT INTO wordbook 
+        (userId, word, translation, difficulty) 
+        VALUES (?, ?, ?, ?)
+        ON DUPLICATE KEY UPDATE 
+        translation = VALUES(translation),
+        difficulty = VALUES(difficulty)`,
+        [entry.userId, entry.word, entry.translation, entry.difficulty]
+      );
+    } catch (error) {
+      console.error('添加单词失败:', error);
+      throw error;
+    }
+  }
+
+  // 从单词本获取单词
+  static async getWordbookEntries(userId: string): Promise<WordbookEntry[]> {
+    try {
+      const [rows] = await this.pool.execute(
+        'SELECT * FROM wordbook WHERE userId = ? ORDER BY addedAt DESC',
+        [userId]
+      );
+      return rows as WordbookEntry[];
+    } catch (error) {
+      console.error('获取单词本失败:', error);
+      throw error;
+    }
+  }
+
+  // 更新单词掌握状态
+  static async updateWordMastery(userId: string, word: string, mastered: boolean): Promise<void> {
+    try {
+      await this.pool.execute(
+        `UPDATE wordbook 
+        SET mastered = ?, 
+            lastReviewedAt = CURRENT_TIMESTAMP,
+            reviewCount = reviewCount + 1 
+        WHERE userId = ? AND word = ?`,
+        [mastered, userId, word]
+      );
+    } catch (error) {
+      console.error('更新单词状态失败:', error);
+      throw error;
+    }
+  }
+
+  // 删除单词本中的单词
+  static async removeFromWordbook(userId: string, word: string): Promise<void> {
+    try {
+      await this.pool.execute(
+        'DELETE FROM wordbook WHERE userId = ? AND word = ?',
+        [userId, word]
+      );
+    } catch (error) {
+      console.error('删除单词失败:', error);
+      throw error;
     }
   }
 } 

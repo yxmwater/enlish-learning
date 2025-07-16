@@ -1,0 +1,135 @@
+.learning-history {
+  padding: 20px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.learning-history h2 {
+  margin-bottom: 24px;
+  color: var(--text-primary);
+}
+
+.chart-container {
+  background: white;
+  padding: 20px;
+  border-radius: var(--radius-lg);
+  margin-bottom: 32px;
+  box-shadow: var(--shadow-sm);
+  overflow-x: auto;
+}
+
+.records-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 20px;
+}
+
+.record-card {
+  background: white;
+  border-radius: var(--radius-lg);
+  padding: 20px;
+  box-shadow: var(--shadow-sm);
+  border-left: 4px solid;
+  transition: transform 0.2s ease;
+}
+
+.record-card:hover {
+  transform: translateY(-2px);
+}
+
+.record-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.game-type {
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.timestamp {
+  font-size: 14px;
+  color: var(--text-secondary);
+}
+
+.record-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.stat-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.stat-item .label {
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.stat-item .value {
+  font-size: 20px;
+  font-weight: 600;
+}
+
+.record-evaluation {
+  padding-top: 12px;
+  border-top: 1px solid var(--gray-200);
+}
+
+.record-evaluation p {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.loading {
+  text-align: center;
+  padding: 40px;
+  color: var(--text-secondary);
+}
+
+.error {
+  text-align: center;
+  padding: 40px;
+  color: var(--error);
+}
+
+.no-records {
+  text-align: center;
+  padding: 40px;
+  color: var(--text-secondary);
+  background: white;
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+}
+
+@media (max-width: 768px) {
+  .learning-history {
+    padding: 16px;
+  }
+
+  .chart-container {
+    padding: 12px;
+    margin-bottom: 24px;
+  }
+
+  .records-list {
+    grid-template-columns: 1fr;
+  }
+
+  .record-stats {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .stat-item .value {
+    font-size: 18px;
+  }
+} 

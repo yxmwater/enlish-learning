@@ -3,11 +3,13 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { RefreshCw, Trophy, Eye, Brain } from 'lucide-react';
 import { Word } from '../types';
 import { playMatchSound, playFlipSound, playSuccessSound } from '../utils/soundEffects';
+import { DatabaseManager } from '../utils/database';
 import './MatchGame.css';
 
 interface MatchGameProps {
   words: Word[];
   onComplete: () => void;
+  userId: string;  // 添加用户ID
 }
 
 interface GameCard {
@@ -19,7 +21,7 @@ interface GameCard {
   isMatched: boolean;
 }
 
-export const MatchGame: React.FC<MatchGameProps> = ({ words, onComplete }) => {
+export const MatchGame: React.FC<MatchGameProps> = ({ words, onComplete, userId }) => {
   const [cards, setCards] = useState<GameCard[]>([]);
   const [selectedCards, setSelectedCards] = useState<string[]>([]);
   const [matchedPairs, setMatchedPairs] = useState<string[]>([]);
@@ -27,6 +29,7 @@ export const MatchGame: React.FC<MatchGameProps> = ({ words, onComplete }) => {
   const [startTime] = useState(Date.now());
   const [gameComplete, setGameComplete] = useState(false);
   const [isVisualMode, setIsVisualMode] = useState(true);  // 默认为视觉学习模式
+  const [difficultWords, setDifficultWords] = useState<string[]>([]);  // 添加困难单词列表
 
   // Initialize game cards
   useEffect(() => {
@@ -120,7 +123,7 @@ export const MatchGame: React.FC<MatchGameProps> = ({ words, onComplete }) => {
     }
   };
 
-  // Check if two cards match
+  // 检查匹配时添加困难单词
   const checkForMatch = (selectedIds: string[]) => {
     const [firstId, secondId] = selectedIds;
     const firstCard = cards.find(c => c.id === firstId);
@@ -141,6 +144,7 @@ export const MatchGame: React.FC<MatchGameProps> = ({ words, onComplete }) => {
         if (matchedPairs.length + 1 === words.slice(0, 8).length) {
           setGameComplete(true);
           playSuccessSound();  // 播放游戏完成音效
+          saveLearningRecord();  // 保存学习记录
         }
       }, 500);
     } else {
@@ -153,7 +157,54 @@ export const MatchGame: React.FC<MatchGameProps> = ({ words, onComplete }) => {
           ));
         }
         setSelectedCards([]);
+
+        // 添加到困难单词列表
+        if (firstCard && secondCard) {
+          const word = words.find(w => w.id === firstCard.wordId);
+          if (word && !difficultWords.includes(word.id)) {
+            setDifficultWords([...difficultWords, word.id]);
+          }
+        }
       }, 1000);
+    }
+  };
+
+  // 保存学习记录
+  const saveLearningRecord = async () => {
+    try {
+      const timeSpent = Math.floor((Date.now() - startTime) / 1000);
+      const score = DatabaseManager.calculateScore(matchedPairs.length, words.slice(0, 8).length, timeSpent);
+      const evaluation = DatabaseManager.getEvaluation(score);
+
+      await DatabaseManager.saveLearningRecord({
+        userId,
+        gameType: 'match',
+        wordCount: words.slice(0, 8).length,
+        correctCount: matchedPairs.length,
+        timeSpent,
+        score,
+        evaluation,
+        timestamp: new Date()
+      });
+
+      // 将困难单词添加到单词本
+      for (const wordId of difficultWords) {
+        const word = words.find(w => w.id === wordId);
+        if (word) {
+          await DatabaseManager.addToWordbook({
+            userId,
+            word: word.english,
+            translation: word.chinese || '',
+            difficulty: 'hard',
+            addedAt: new Date(),
+            lastReviewedAt: null,
+            reviewCount: 0,
+            mastered: false
+          });
+        }
+      }
+    } catch (error) {
+      console.error('保存学习记录失败:', error);
     }
   };
 
