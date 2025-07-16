@@ -108,6 +108,15 @@
   transform: rotateY(180deg);
 }
 
+/* 视觉学习模式下不需要3D翻转 */
+.game-card.visual-mode .card-inner {
+  transform-style: flat;
+}
+
+.game-card.visual-mode.flipped .card-inner {
+  transform: none;
+}
+
 .card-front,
 .card-back {
   width: 100%;
@@ -140,16 +149,20 @@
   border: 2px solid var(--gray-200);
 }
 
-.visual-mode-content {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  padding: 8px;
-  text-align: center;
-  width: 100%;
-  height: 100%;
+/* 视觉学习模式下不需要翻转 */
+.card-back.no-transform {
+  transform: none;
+  border: 2px solid var(--gray-200);
+  background: white;
+}
+
+.game-card.visual-mode:hover .card-back.no-transform {
+  border-color: var(--primary-color);
+}
+
+.game-card.visual-mode.selected .card-back.no-transform {
+  border-color: var(--primary-color);
+  background: var(--gray-50);
 }
 
 .card-content {
@@ -158,16 +171,6 @@
   text-align: center;
   padding: 4px;
   transition: all 0.2s ease;
-}
-
-.visual-mode-content .card-content.english {
-  color: var(--primary-color);
-  font-size: 20px;
-}
-
-.visual-mode-content .card-content.chinese {
-  color: var(--secondary-color);
-  font-size: 16px;
 }
 
 .card-content.english {
@@ -252,14 +255,6 @@
   
   .card-content {
     font-size: 14px;
-  }
-  
-  .visual-mode-content .card-content.english {
-    font-size: 16px;
-  }
-  
-  .visual-mode-content .card-content.chinese {
-    font-size: 12px;
   }
   
   .game-stats {

@@ -14,7 +14,6 @@ interface GameCard {
   id: string;
   wordId: string;
   content: string;
-  translation?: string;  // 添加翻译字段
   type: 'english' | 'chinese';
   isFlipped: boolean;
   isMatched: boolean;
@@ -39,23 +38,30 @@ export const MatchGame: React.FC<MatchGameProps> = ({ words, onComplete }) => {
     const wordsToUse = words.slice(0, 8); // Use first 8 words for a 4x4 grid
 
     if (isVisualMode) {
-      // 视觉学习模式：每个卡片显示英文和中文
-      wordsToUse.forEach((word, index) => {
-        // 创建两个相同的卡片用于配对
-        for (let i = 0; i < 2; i++) {
-          gameCards.push({
-            id: `${i}-${word.id}`,
-            wordId: word.id,
-            content: word.english,
-            translation: word.chinese,
-            type: 'english',
-            isFlipped: false,
-            isMatched: false
-          });
-        }
+      // 视觉学习模式：每对卡片一个显示英文，一个显示中文
+      wordsToUse.forEach((word) => {
+        // 英文卡片
+        gameCards.push({
+          id: `en-${word.id}`,
+          wordId: word.id,
+          content: word.english,
+          type: 'english',
+          isFlipped: true, // 直接显示内容
+          isMatched: false
+        });
+
+        // 中文卡片
+        gameCards.push({
+          id: `ch-${word.id}`,
+          wordId: word.id,
+          content: word.chinese || word.english,
+          type: 'chinese',
+          isFlipped: true, // 直接显示内容
+          isMatched: false
+        });
       });
     } else {
-      // 记忆训练模式：英文和中文分开
+      // 记忆训练模式：英文和中文分开，需要翻牌
       wordsToUse.forEach((word) => {
         gameCards.push({
           id: `en-${word.id}`,
@@ -85,19 +91,27 @@ export const MatchGame: React.FC<MatchGameProps> = ({ words, onComplete }) => {
   // Handle card click
   const handleCardClick = (cardId: string) => {
     const card = cards.find(c => c.id === cardId);
-    if (!card || card.isMatched || card.isFlipped) return;
+    if (!card || card.isMatched) return;
+    
+    // 在记忆训练模式下，如果卡片已经翻开，则不允许点击
+    if (!isVisualMode && card.isFlipped) return;
 
     if (selectedCards.length === 2) return;
 
-    playFlipSound();  // 播放翻牌音效
+    // 只在记忆训练模式下播放翻牌音效
+    if (!isVisualMode) {
+      playFlipSound();
+    }
 
     const newSelectedCards = [...selectedCards, cardId];
     setSelectedCards(newSelectedCards);
 
-    // Flip the card
-    setCards(cards.map(c => 
-      c.id === cardId ? { ...c, isFlipped: true } : c
-    ));
+    // 在记忆训练模式下才需要翻牌动画
+    if (!isVisualMode) {
+      setCards(cards.map(c => 
+        c.id === cardId ? { ...c, isFlipped: true } : c
+      ));
+    }
 
     // Check for match when two cards are selected
     if (newSelectedCards.length === 2) {
@@ -114,7 +128,7 @@ export const MatchGame: React.FC<MatchGameProps> = ({ words, onComplete }) => {
 
     if (firstCard && secondCard && firstCard.wordId === secondCard.wordId && firstId !== secondId) {
       // Match found!
-      playMatchSound();  // 播放匹配成功音效
+      playMatchSound();  // 播放匹配音效
       
       setTimeout(() => {
         setCards(cards.map(c => 
@@ -130,11 +144,14 @@ export const MatchGame: React.FC<MatchGameProps> = ({ words, onComplete }) => {
         }
       }, 500);
     } else {
-      // No match, flip cards back
+      // No match
       setTimeout(() => {
-        setCards(cards.map(c => 
-          selectedIds.includes(c.id) ? { ...c, isFlipped: false } : c
-        ));
+        // 在记忆训练模式下才需要翻回卡片
+        if (!isVisualMode) {
+          setCards(cards.map(c => 
+            selectedIds.includes(c.id) ? { ...c, isFlipped: false } : c
+          ));
+        }
         setSelectedCards([]);
       }, 1000);
     }
@@ -195,28 +212,23 @@ export const MatchGame: React.FC<MatchGameProps> = ({ words, onComplete }) => {
         {cards.map((card) => (
           <motion.div
             key={card.id}
-            className={`game-card ${card.isFlipped ? 'flipped' : ''} ${card.isMatched ? 'matched' : ''}`}
+            className={`game-card ${card.isFlipped ? 'flipped' : ''} ${card.isMatched ? 'matched' : ''} ${isVisualMode ? 'visual-mode' : ''}`}
             onClick={() => handleCardClick(card.id)}
-            whileHover={!card.isFlipped && !card.isMatched ? { scale: 1.05 } : {}}
-            whileTap={!card.isFlipped && !card.isMatched ? { scale: 0.95 } : {}}
+            whileHover={!card.isMatched ? { scale: 1.05 } : {}}
+            whileTap={!card.isMatched ? { scale: 0.95 } : {}}
             animate={card.isMatched ? { scale: 0 } : {}}
             transition={{ duration: 0.3 }}
           >
             <div className="card-inner">
-              <div className="card-front">
-                <div className="card-pattern"></div>
-              </div>
-              <div className="card-back">
-                {isVisualMode ? (
-                  <div className="visual-mode-content">
-                    <span className="card-content english">{card.content}</span>
-                    <span className="card-content chinese">{card.translation}</span>
-                  </div>
-                ) : (
-                  <span className={`card-content ${card.type}`}>
-                    {card.content}
-                  </span>
-                )}
+              {!isVisualMode && (
+                <div className="card-front">
+                  <div className="card-pattern"></div>
+                </div>
+              )}
+              <div className={`card-back ${isVisualMode ? 'no-transform' : ''}`}>
+                <span className={`card-content ${card.type}`}>
+                  {card.content}
+                </span>
               </div>
             </div>
           </motion.div>
