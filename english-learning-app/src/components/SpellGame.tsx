@@ -1,15 +1,17 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Volume2, Check, X, SkipForward, Trophy } from 'lucide-react';
+import { Check, X, SkipForward } from 'lucide-react';
 import { Word } from '../types';
+import { DatabaseManager } from '../utils/database';
 import './SpellGame.css';
 
 interface SpellGameProps {
   words: Word[];
   onComplete: () => void;
+  userId: string;  // 添加用户ID
 }
 
-export const SpellGame: React.FC<SpellGameProps> = ({ words, onComplete }) => {
+export const SpellGame: React.FC<SpellGameProps> = ({ words, onComplete, userId }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [userInput, setUserInput] = useState('');
   const [showFeedback, setShowFeedback] = useState(false);
@@ -17,6 +19,8 @@ export const SpellGame: React.FC<SpellGameProps> = ({ words, onComplete }) => {
   const [score, setScore] = useState(0);
   const [attempts, setAttempts] = useState(0);
   const [gameComplete, setGameComplete] = useState(false);
+  const [startTime] = useState(Date.now());
+  const [difficultWords, setDifficultWords] = useState<string[]>([]);
   const inputRef = useRef<HTMLInputElement>(null);
 
   const currentWord = words[currentIndex];
@@ -44,6 +48,11 @@ export const SpellGame: React.FC<SpellGameProps> = ({ words, onComplete }) => {
 
     if (correct) {
       setScore(score + 1);
+    } else {
+      // 添加到困难单词列表
+      if (!difficultWords.includes(currentWord.id)) {
+        setDifficultWords([...difficultWords, currentWord.id]);
+      }
     }
 
     setTimeout(() => {
@@ -64,11 +73,54 @@ export const SpellGame: React.FC<SpellGameProps> = ({ words, onComplete }) => {
       setAttempts(0);
     } else {
       setGameComplete(true);
+      saveLearningRecord();
     }
   };
 
   const skipWord = () => {
+    // 添加到困难单词列表
+    if (!difficultWords.includes(currentWord.id)) {
+      setDifficultWords([...difficultWords, currentWord.id]);
+    }
     nextWord();
+  };
+
+  const saveLearningRecord = async () => {
+    try {
+      const timeSpent = Math.floor((Date.now() - startTime) / 1000);
+      const finalScore = DatabaseManager.calculateScore(score, words.length, timeSpent);
+      const evaluation = DatabaseManager.getEvaluation(finalScore);
+
+      await DatabaseManager.saveLearningRecord({
+        userId,
+        gameType: 'spell',
+        wordCount: words.length,
+        correctCount: score,
+        timeSpent,
+        score: finalScore,
+        evaluation,
+        timestamp: new Date()
+      });
+
+      // 将困难单词添加到单词本
+      for (const wordId of difficultWords) {
+        const word = words.find(w => w.id === wordId);
+        if (word) {
+          await DatabaseManager.addToWordbook({
+            userId,
+            word: word.english,
+            translation: word.chinese || '',
+            difficulty: 'hard',
+            addedAt: new Date(),
+            lastReviewedAt: null,
+            reviewCount: 0,
+            mastered: false
+          });
+        }
+      }
+    } catch (error) {
+      console.error('保存学习记录失败:', error);
+    }
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
@@ -77,63 +129,34 @@ export const SpellGame: React.FC<SpellGameProps> = ({ words, onComplete }) => {
     }
   };
 
-  const restartGame = () => {
-    setCurrentIndex(0);
-    setUserInput('');
-    setShowFeedback(false);
-    setIsCorrect(false);
-    setScore(0);
-    setAttempts(0);
-    setGameComplete(false);
-  };
-
-  const accuracy = words.length > 0 ? Math.round((score / words.length) * 100) : 0;
-
   return (
     <div className="spell-game">
       {!gameComplete ? (
         <>
-          <div className="spell-header">
-            <div className="progress-bar">
-              <div 
-                className="progress-fill"
-                style={{ width: `${((currentIndex + 1) / words.length) * 100}%` }}
-              />
+          <div className="game-header">
+            <div className="progress">
+              <div className="progress-text">
+                {currentIndex + 1} / {words.length}
+              </div>
+              <div className="progress-bar">
+                <div 
+                  className="progress-fill"
+                  style={{ width: `${((currentIndex + 1) / words.length) * 100}%` }}
+                ></div>
+              </div>
             </div>
-            <div className="spell-stats">
-              <span>单词 {currentIndex + 1}/{words.length}</span>
-              <span>得分: {score}</span>
+            <div className="score">
+              得分: {score}
             </div>
           </div>
 
-          <div className="spell-content">
-            <AnimatePresence mode="wait">
-              <motion.div
-                key={currentIndex}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -20 }}
-                className="word-display"
-              >
-                {currentWord.chinese && (
-                  <div className="word-chinese">{currentWord.chinese}</div>
-                )}
-                {currentWord.pronunciation && (
-                  <div className="word-pronunciation">[{currentWord.pronunciation}]</div>
-                )}
-                
-                <button className="speak-button" onClick={speakWord}>
-                  <Volume2 size={32} />
-                  <span>播放发音</span>
-                </button>
-
-                {attempts > 0 && !isCorrect && (
-                  <div className="hint">
-                    提示: {currentWord.english.substring(0, Math.min(3, currentWord.english.length))}...
-                  </div>
-                )}
-              </motion.div>
-            </AnimatePresence>
+          <div className="game-content">
+            <div className="word-section">
+              <div className="chinese-hint">{currentWord.chinese}</div>
+              <button className="speak-button" onClick={speakWord}>
+                点击听发音
+              </button>
+            </div>
 
             <div className="input-section">
               <input
@@ -191,32 +214,26 @@ export const SpellGame: React.FC<SpellGameProps> = ({ words, onComplete }) => {
           </div>
         </>
       ) : (
-        <motion.div
-          className="game-complete"
-          initial={{ opacity: 0, scale: 0.8 }}
-          animate={{ opacity: 1, scale: 1 }}
-        >
-          <Trophy size={64} className="trophy-icon" />
-          <h2>练习完成！</h2>
-          <div className="final-stats">
-            <div className="stat-item">
-              <span className="stat-label">正确单词</span>
-              <span className="stat-value">{score}/{words.length}</span>
+        <div className="game-complete">
+          <h2>游戏完成！</h2>
+          <div className="complete-stats">
+            <div className="stat">
+              <span className="label">总单词数</span>
+              <span className="value">{words.length}</span>
             </div>
-            <div className="stat-item">
-              <span className="stat-label">正确率</span>
-              <span className="stat-value">{accuracy}%</span>
+            <div className="stat">
+              <span className="label">正确数</span>
+              <span className="value">{score}</span>
+            </div>
+            <div className="stat">
+              <span className="label">正确率</span>
+              <span className="value">{Math.round((score / words.length) * 100)}%</span>
             </div>
           </div>
           <div className="complete-actions">
-            <button onClick={restartGame} className="action-button">
-              重新练习
-            </button>
-            <button onClick={onComplete} className="action-button primary">
-              返回主页
-            </button>
+            <button onClick={onComplete}>返回主页</button>
           </div>
-        </motion.div>
+        </div>
       )}
     </div>
   );

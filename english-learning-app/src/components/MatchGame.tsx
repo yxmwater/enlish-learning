@@ -34,7 +34,7 @@ export const MatchGame: React.FC<MatchGameProps> = ({ words, onComplete, userId 
   // Initialize game cards
   useEffect(() => {
     initializeGame();
-  }, [words, isVisualMode]);
+  }, [words, isVisualMode]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const initializeGame = () => {
     const gameCards: GameCard[] = [];

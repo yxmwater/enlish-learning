@@ -18,19 +18,13 @@ import {
   AlertCircle,
   CheckCircle
 } from 'lucide-react';
-import { DatabaseManager, WordImportHistory, HistoryUtils } from '../utils/database';
+import { DatabaseManager, WordImportHistory, HistoryUtils, HistoryStats } from '../utils/database';
 import { Word } from '../types';
 import './HistoryManager.css';
 
 interface HistoryManagerProps {
   onSelectHistory: (words: Word[]) => void;
   onClose: () => void;
-}
-
-interface HistoryStats {
-  totalRecords: number;
-  totalWords: number;
-  sourceStats: { source_type: string; count: number }[];
 }
 
 export const HistoryManager: React.FC<HistoryManagerProps> = ({ onSelectHistory, onClose }) => {
@@ -211,10 +205,10 @@ export const HistoryManager: React.FC<HistoryManagerProps> = ({ onSelectHistory,
                 <div className="stat-sources">
                   <div className="stat-label">来源分布</div>
                   <div className="source-stats">
-                    {stats.sourceStats.map(stat => (
-                      <div key={stat.source_type} className="source-stat">
-                        <span>{sourceNames[stat.source_type as keyof typeof sourceNames]}</span>
-                        <span>{stat.count}</span>
+                    {Object.entries(stats.sourceDistribution).map(([source, count]) => (
+                      <div key={source} className="source-stat">
+                        <span>{sourceNames[source as keyof typeof sourceNames] || source}</span>
+                        <span>{count}</span>
                       </div>
                     ))}
                   </div>

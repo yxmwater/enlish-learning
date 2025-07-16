@@ -1,192 +1,150 @@
 import { Word } from '../types';
 
-// 网络内容获取接口
-export interface ContentSource {
-  id: string;
-  name: string;
-  url: string;
-  type: 'webpage' | 'api' | 'json' | 'text';
-  parser: (content: string) => Word[];
-}
+// 预定义的词汇来源
+export const predefinedSources = [
+  {
+    id: 'cambridge-basic',
+    name: 'Cambridge Basic English',
+    url: 'https://www.cambridgeenglish.org/learning-english/parents-and-children/information-for-parents/tips-and-advice/vocabulary-games-and-activities/',
+    description: '剑桥基础英语词汇'
+  },
+  {
+    id: 'oxford-3000',
+    name: 'Oxford 3000',
+    url: 'https://www.oxfordlearnersdictionaries.com/wordlist/english/oxford3000/',
+    description: '牛津3000核心词汇'
+  }
+];
 
-// 词汇解析工具
+// 词汇解析器
 export class VocabularyParser {
-  // 解析常见的单词格式
-  static parseWordLine(line: string, index: number, source: string): Word | null {
-    // 格式1: "apple - 苹果 [ˈæpl]"
-    const format1 = /^(.+?)\s*-\s*(.+?)\s*\[(.+?)\]$/;
-    // 格式2: "apple 苹果 /ˈæpl/"
-    const format2 = /^(.+?)\s+(.+?)\s*\/(.+?)\//;
-    // 格式3: "apple: 苹果 (ˈæpl)"
-    const format3 = /^(.+?):\s*(.+?)\s*\((.+?)\)$/;
-    // 格式4: "apple，苹果，ˈæpl"
-    const format4 = /^(.+?)，(.+?)，(.+?)$/;
+  // 从文本中提取单词
+  static extractWordsFromText(text: string, source: string): Word[] {
+    const words: Word[] = [];
+    const lines = text.split('\n').filter(line => line.trim());
     
-    let match = line.match(format1) || line.match(format2) || line.match(format3) || line.match(format4);
-    
-    if (match) {
-      const [, english, chinese, pronunciation] = match;
-      return {
-        id: `${source}-${index}`,
-        english: english.trim(),
-        chinese: chinese.trim(),
-        pronunciation: pronunciation.trim(),
-        level: 'beginner',
-        category: 'imported',
-        textbook: source,
-        unit: 'imported',
-        lesson: 'imported'
-      };
+    for (const line of lines) {
+      const word = this.parseWordLine(line, source);
+      if (word) {
+        words.push(word);
+      }
     }
     
-    // 简单格式: "apple 苹果"
-    const simpleFormat = /^(.+?)\s+(.+?)$/;
-    match = line.match(simpleFormat);
-    if (match) {
-      const [, english, chinese] = match;
-      return {
-        id: `${source}-${index}`,
-        english: english.trim(),
-        chinese: chinese.trim(),
-        level: 'beginner',
-        category: 'imported',
-        textbook: source,
-        unit: 'imported',
-        lesson: 'imported'
-      };
+    return words;
+  }
+  
+  // 从HTML中提取单词
+  static extractWordsFromHTML(html: string, source: string): Word[] {
+    // 创建临时DOM元素来解析HTML
+    const tempDiv = document.createElement('div');
+    tempDiv.innerHTML = html;
+    
+    // 提取文本内容
+    const text = tempDiv.textContent || tempDiv.innerText || '';
+    
+    return this.extractWordsFromText(text, source);
+  }
+  
+  // 解析单词行
+  private static parseWordLine(line: string, source: string): Word | null {
+    // 支持多种格式:
+    // 1. "hello - 你好"
+    // 2. "hello - 你好 [həˈloʊ]"
+    // 3. "hello: 你好"
+    // 4. "hello 你好"
+    
+    const patterns = [
+      /^(\w+)\s*-\s*([\u4e00-\u9fa5]+(?:\s*[\u4e00-\u9fa5]+)*)\s*(?:\[([^\]]+)\])?$/,
+      /^(\w+)\s*:\s*([\u4e00-\u9fa5]+(?:\s*[\u4e00-\u9fa5]+)*)\s*(?:\[([^\]]+)\])?$/,
+      /^(\w+)\s+([\u4e00-\u9fa5]+(?:\s*[\u4e00-\u9fa5]+)*)\s*(?:\[([^\]]+)\])?$/
+    ];
+    
+    for (const pattern of patterns) {
+      const match = line.match(pattern);
+      if (match) {
+        return {
+          id: `word-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+          english: match[1].trim().toLowerCase(),
+          chinese: match[2].trim(),
+          pronunciation: match[3] ? match[3].trim() : undefined,
+          category: source
+        };
+      }
     }
     
     return null;
   }
   
-  // 从文本内容中提取单词
-  static extractWordsFromText(content: string, source: string): Word[] {
-    const lines = content.split('\n');
-    const words: Word[] = [];
+  // 验证单词格式
+  static validateWordFormat(text: string): {
+    isValid: boolean;
+    errors: string[];
+    suggestions: string[];
+  } {
+    const errors: string[] = [];
+    const suggestions: string[] = [];
     
-    lines.forEach((line, index) => {
-      const cleanLine = line.trim();
-      if (cleanLine && !cleanLine.startsWith('#') && !cleanLine.startsWith('//')) {
-        const word = this.parseWordLine(cleanLine, index, source);
-        if (word) {
-          words.push(word);
-        }
+    const lines = text.split('\n').filter(line => line.trim());
+    
+    if (lines.length === 0) {
+      errors.push('文本内容为空');
+      suggestions.push('请输入单词内容');
+      return { isValid: false, errors, suggestions };
+    }
+    
+    let validLines = 0;
+    
+    for (const line of lines) {
+      if (this.parseWordLine(line, 'validation')) {
+        validLines++;
       }
-    });
+    }
     
-    return words;
-  }
-  
-  // 从HTML内容中提取单词
-  static extractWordsFromHTML(html: string, source: string): Word[] {
-    // 移除HTML标签
-    const textContent = html.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ');
+    if (validLines === 0) {
+      errors.push('未找到有效的单词格式');
+      suggestions.push('请使用格式: "hello - 你好" 或 "hello - 你好 [həˈloʊ]"');
+    } else if (validLines < lines.length) {
+      errors.push(`${lines.length - validLines} 行格式不正确`);
+      suggestions.push('请检查每行的格式是否正确');
+    }
     
-    // 查找可能的单词模式
-    const wordPatterns = [
-      // 中英文对照模式
-             /([a-zA-Z]+)\s*[：:-]\s*([^\s\n]+)/g,
-      // 括号模式
-      /([a-zA-Z]+)\s*\(([^)]+)\)/g,
-    ];
-    
-    const words: Word[] = [];
-    let wordIndex = 0;
-    
-    wordPatterns.forEach(pattern => {
-      let match;
-      while ((match = pattern.exec(textContent)) !== null) {
-        const english = match[1].trim();
-        const chinese = match[2].trim();
-        
-        if (english.length > 1 && chinese.length > 0) {
-          words.push({
-            id: `${source}-${wordIndex++}`,
-            english: english.toLowerCase(),
-            chinese: chinese,
-            level: 'beginner',
-            category: 'imported',
-            textbook: source,
-            unit: 'imported',
-            lesson: 'imported'
-          });
-        }
-      }
-    });
-    
-    return words;
+    return {
+      isValid: errors.length === 0,
+      errors,
+      suggestions
+    };
   }
 }
 
-// 网络内容获取器
+// 内容获取器（由于CORS限制，实际使用时需要后端支持）
 export class ContentFetcher {
-  // 由于浏览器CORS限制，我们需要使用代理或者让用户手动输入内容
+  // 获取网页内容
   static async fetchContent(url: string): Promise<string> {
     try {
-      // 这里需要使用CORS代理或者后端API
+      // 注意：由于CORS限制，这在浏览器中通常不会工作
+      // 实际应用中需要后端代理或CORS代理服务
       const response = await fetch(url);
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
       return await response.text();
     } catch (error) {
-      console.error('Failed to fetch content:', error);
-      throw error;
+      throw new Error(`无法获取网页内容: ${error}`);
     }
   }
   
-  // 处理不同类型的内容源
-  static async processContentSource(source: ContentSource): Promise<Word[]> {
+  // 获取预定义来源的内容
+  static async fetchPredefinedSource(sourceId: string): Promise<Word[]> {
+    const source = predefinedSources.find(s => s.id === sourceId);
+    if (!source) {
+      throw new Error('未找到指定的词汇来源');
+    }
+    
     try {
       const content = await this.fetchContent(source.url);
-      return source.parser(content);
+      return VocabularyParser.extractWordsFromHTML(content, sourceId);
     } catch (error) {
-      console.error(`Failed to process content from ${source.name}:`, error);
-      return [];
+      throw new Error(`获取 ${source.name} 失败: ${error}`);
     }
   }
-}
-
-// 预定义的内容源
-export const predefinedSources: ContentSource[] = [
-  {
-    id: 'beijing-grade3-spring',
-    name: '北京版三年级下册',
-    url: 'https://mp.weixin.qq.com/s?__biz=MzIxNTYzMDc5MA==&mid=2247629847&idx=2&sn=b9b2fbcb717f0f7758788ee2a78aa7f1&chksm=96e5657a8172eac15e667d5175f8dc562901d54ff0e268702f1fe6509f5d61c4668ae9767d57&scene=27',
-    type: 'webpage',
-    parser: (content: string) => VocabularyParser.extractWordsFromHTML(content, 'beijing-grade3-spring')
-  },
-  {
-    id: 'sample-text',
-    name: '示例文本格式',
-    url: '',
-    type: 'text',
-    parser: (content: string) => VocabularyParser.extractWordsFromText(content, 'sample-text')
-  }
-];
-
-// 常用教材词汇API端点（示例）
-export const educationAPIs = {
-  // 这些是示例API，实际使用时需要替换为真实的教育资源API
-  peopleEducation: 'https://api.pep.com.cn/vocabulary/grade3',
-  beijingEducation: 'https://api.bjedu.cn/textbook/vocabulary',
-  oxfordPrimary: 'https://api.oup.com/primary/vocabulary',
-};
-
-// 从多个来源合并词汇
-export function mergeVocabularyFromSources(wordLists: Word[][]): Word[] {
-  const mergedWords: Word[] = [];
-  const seenWords = new Set<string>();
-  
-  wordLists.forEach(wordList => {
-    wordList.forEach(word => {
-      const key = `${word.english.toLowerCase()}-${word.chinese}`;
-      if (!seenWords.has(key)) {
-        seenWords.add(key);
-        mergedWords.push(word);
-      }
-    });
-  });
-  
-  return mergedWords;
 } 

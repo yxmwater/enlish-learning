@@ -18,6 +18,7 @@ function App() {
   const [inputMode, setInputMode] = useState<InputMode | null>(null);
   const [gameMode, setGameMode] = useState<GameMode | null>(null);
   const [gameStarted, setGameStarted] = useState(false);
+  const [userId] = useState('default-user'); // 添加默认用户ID
 
   const handleWordsLoaded = (loadedWords: Word[]) => {
     setWords(loadedWords);
@@ -53,9 +54,9 @@ function App() {
       <div className="app">
         <div className="app-container">
           {gameMode === 'match' ? (
-            <MatchGame words={words} onComplete={handleGameComplete} />
+            <MatchGame words={words} onComplete={handleGameComplete} userId={userId} />
           ) : (
-            <SpellGame words={words} onComplete={handleGameComplete} />
+            <SpellGame words={words} onComplete={handleGameComplete} userId={userId} />
           )}
         </div>
       </div>
